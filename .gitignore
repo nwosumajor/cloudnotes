@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+
+# Local database — each environment builds its own
+notes.db
+*.log
