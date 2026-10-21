@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CloudNotes</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 640px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.delete-btn {
+      background: #ef4444;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .note-item {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .note-meta {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>CloudNotes</h1>
+
+  <div class="card">
+    <input type="text" id="note-title" placeholder="Note title (required)" />
+    <textarea id="note-body" rows="3" placeholder="Note details..."></textarea>
+    <button onclick="addNote()">Add Note</button>
+  </div>
+
+  <h2>Saved Notes</h2>
+  <div id="notes-list">Loading notes...</div>
+
+  <script>
+    // Replace <YOUR_ELASTIC_IP> with your EC2 Elastic IP
+    const API_BASE = "http://54.237.220.0:5000";
+
+    async function loadNotes() {
+      const listEl = document.getElementById("notes-list");
+      try {
+        const res = await fetch(`${API_BASE}/notes`);
+        const data = await res.json();
+        if (!data.notes || data.notes.length === 0) {
+          listEl.innerHTML = "<p>No notes yet. Add your first note above!</p>";
+          return;
+        }
+        listEl.innerHTML = data.notes.map(note => `
+          <div class="note-item">
+            <div>
+              <strong>${escapeHtml(note.title)}</strong>
+              <p style="margin: 6px 0;">${escapeHtml(note.body)}</p>
+              <div class="note-meta">ID: #${note.id} &bull; ${note.created_at}</div>
+            </div>
+            <button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button>
+          </div>
+        `).join("");
+      } catch (err) {
+        listEl.innerHTML = `<p style="color:#ef4444;">Error connecting to API at ${API_BASE}. Check CORS and Security Group port 5000.</p>`;
+      }
+    }
+
+    async function addNote() {
+      const titleEl = document.getElementById("note-title");
+      const bodyEl = document.getElementById("note-body");
+      const title = titleEl.value.trim();
+      const body = bodyEl.value.trim();
+
+      if (!title) return alert("Please enter a title!");
+
+      await fetch(`${API_BASE}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body })
+      });
+
+      titleEl.value = "";
+      bodyEl.value = "";
+      loadNotes();
+    }
+
+    async function deleteNote(id) {
+      await fetch(`${API_BASE}/notes/${id}`, { method: "DELETE" });
+      loadNotes();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[m]));
+    }
+
+    loadNotes();
+  </script>
+</body>
+</html>
