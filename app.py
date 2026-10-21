@@ -1,5 +1,13 @@
 """CloudNotes v1 — a small notes API backed by SQLite.
 
+@app.after_request
+def add_cors_headers(response):
+    ""Allow the S3/CloudFront frontend to call the API from another domain.""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
 Routes:
     GET    /notes       list all notes
     POST   /notes       create a note   {"title": "...", "body": "..."}
