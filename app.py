@@ -73,7 +73,9 @@ def delete_note(note_id):
     conn = get_db()
     with conn.cursor() as cur:
         cur.execute("DELETE FROM notes WHERE id = %s", (note_id,))
-        deleted_count, conn.commit() = cur.rowcount, conn.commit()
+        deleted_count = cur.rowcount
+        conn.commit()
+
     if deleted_count == 0:
         return jsonify({"error": "not found"}), 404
     return jsonify({"deleted": note_id})
